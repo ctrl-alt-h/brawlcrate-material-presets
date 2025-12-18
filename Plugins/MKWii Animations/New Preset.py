@@ -1,5 +1,5 @@
-__author__ = "BillyNoodles"
-__version__ = "2.0.0"
+__author__ = "BillyNoodles, Palontras"
+__version__ = "2.0.1"
 
 from BrawlCrate.API import BrawlAPI
 from BrawlCrate.UI import MainForm

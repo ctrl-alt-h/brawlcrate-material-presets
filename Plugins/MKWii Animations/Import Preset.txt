@@ -1,5 +1,5 @@
-__author__ = "BillyNoodles"
-__version__ = "2.0.0"
+__author__ = "BillyNoodles, Palontras"
+__version__ = "2.0.1"
 
 from BrawlCrate.API import *
 from BrawlCrate.NodeWrappers import *
@@ -48,44 +48,60 @@ def import_animation(target):
                 mdl0_tex.Remove()
 
     # delete old animation
-    for srt in BrawlAPI.NodeListOfType[SRT0Node]():
-        for srt_subnode in srt.Children:
-            if srt_subnode.Name == material.Name:
-                srt.Remove()
+    for node_type in [SRT0Node, CHR0Node, PAT0Node, CLR0Node, SCN0Node, SHP0Node, VIS0Node]:
+        for node in BrawlAPI.NodeListOfType[node_type]():
+            for subnode in node.Children:
+                if subnode.Name == material.Name:
+                    node.Remove()
 
     #################
     ### Importing ###
     #################
 
-    for filename in Directory.GetFiles(preset_path):
-        # import textures
-        if filename.endswith(".tex0"):
-            node = NodeFactory.FromFile(None, filename)
-            brres.GetOrCreateFolder[TEX0Node]().AddChild(node)
+    animation_folders = {
+            'srt0': SRT0Node,
+            'chr0': CHR0Node,
+            'pat0': PAT0Node,
+            'clr0': CLR0Node,
+            'scn0': SCN0Node,
+            'shp0': SHP0Node,
+            'vis0': VIS0Node
+    }
 
-        # import material
-        if filename.endswith(".mdl0mat"):
-            material.Replace(filename)
-            material.Name = Path.GetFileNameWithoutExtension(filename)
+    for anim_type, node_type in animation_folders.items():
+        folder_path = Path.Combine(base_preset_path, anim_type.upper())
+        if not Directory.Exists(folder_path):
+            continue
 
-        # import shader and set material shader
-        if filename.endswith(".mdl0shade"):
+        for filename in Directory.GetFiles(folder_path):
 
-            # replace shader if only in use by target
-            if len(material.ShaderNode.Materials) == 1:
-                material.ShaderNode.Replace(filename)
+            # Import textures
+            if filename.endswith(".tex0"):
+                node = NodeFactory.FromFile(None, filename)
+                brres.GetOrCreateFolder[TEX0Node]().AddChild(node)
 
-            # otherwise make a new shader
-            else:
-                shader = model_wrapper.NewShader()
-                shader.Replace(filename)
+            # Import material
+            if filename.endswith(".mdl0mat"):
+                material.Replace(filename)
+                material.Name = Path.GetFileNameWithoutExtension(filename)
 
-                material.ShaderNode = shader
+            # Import shader and set material shader
+            if filename.endswith(".mdl0shade"):
 
-        # import animation and rename material
-        if filename.endswith(".srt0"):
-            node = NodeFactory.FromFile(None, filename)
-            brres.GetOrCreateFolder[SRT0Node]().AddChild(node)
+                # Replace shader if only in use by target
+                if len(material.ShaderNode.Materials) == 1:
+                    material.ShaderNode.Replace(filename)
+
+                # Otherwise make a new shader
+                else:
+                    shader = model_wrapper.NewShader()
+                    shader.Replace(filename)
+                    material.ShaderNode = shader
+
+            # Import animations and rename material
+            if filename.endswith(f".{anim_type}"):
+                node = NodeFactory.FromFile(None, filename)
+                brres.GetOrCreateFolder[node_type]().AddChild(node)
 
 if BrawlAPI.RootNode != None or BrawlAPI.RootNode.NodeType != BRRESNode:
 
